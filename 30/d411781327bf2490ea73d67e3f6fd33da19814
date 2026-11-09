@@ -1,0 +1,18 @@
+app/api/chat/route.ts
+  h_c714c5d6d16f81 4,7,22-35,48-49,56-58,74,80,95-101,103-141,144,157-162,174-176
+app/tools/index.ts
+  h_c714c5d6d16f81 41,90-95,121-136
+app/tools/subtitles.ts
+  h_c714c5d6d16f81 1,6-11,22-26,48-54,95,114,116-117,126-130,132-140,142,194-199,206,208,226-237,239,276-277,296,306,308-309,317-326,330-331,338,340-342,362-366,388-394,433,435-436,444-453,457
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "30d411781327bf2490ea73d67e3f6fd33da19814",
+  "prompts": {},
+  "humans": {
+    "h_c714c5d6d16f81": {
+      "author": "roicastrocasal <roicc@inditex.com>"
+    }
+  }
+}
