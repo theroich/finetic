@@ -1,0 +1,19 @@
+openspec/specs/openrouter-model-selection/spec.md
+  s_d01d262e00a220::t_717da2bb9dc009 1-239
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "4b4f75343751ead3c1c1e6bd7b36a869479d1d01",
+  "prompts": {},
+  "sessions": {
+    "s_d01d262e00a220": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3e82285bffew2eEYzXGr3d1dC",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "roicastrocasal <roicc@inditex.com>"
+    }
+  }
+}
