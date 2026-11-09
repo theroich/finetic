@@ -1,0 +1,16 @@
+app/api/image/route.ts
+  h_c714c5d6d16f81 1-84
+components/media-card.tsx
+  h_c714c5d6d16f81 54,56,58-69,148,150-152,154,158-160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "b1620c979d12ccd9fc363544b817cf8fb008a5d6",
+  "prompts": {},
+  "humans": {
+    "h_c714c5d6d16f81": {
+      "author": "roicastrocasal <roicc@inditex.com>"
+    }
+  }
+}
