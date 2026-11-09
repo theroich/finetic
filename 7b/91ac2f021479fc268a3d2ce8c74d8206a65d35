@@ -1,0 +1,28 @@
+app/(main)/settings/page.tsx
+  h_c714c5d6d16f81 20,24-29,47-48,57-66,127-130,364-369,378,380,383-388,391-392,394,404-440
+app/api/openrouter/models/route.ts
+  h_c714c5d6d16f81 1-16
+components/navigator/ai-ask.tsx
+  h_c714c5d6d16f81 84,436,556-560
+components/settings/openrouter-model-picker.tsx
+  h_c714c5d6d16f81 1-286
+contexts/settings-context.tsx
+  h_c714c5d6d16f81 38-39,63,65-67,122-128,182-186,220-221
+hooks/useOpenRouterModels.ts
+  h_c714c5d6d16f81 1-60
+lib/openrouter-server.ts
+  h_c714c5d6d16f81 1-84
+lib/openrouter.ts
+  h_c714c5d6d16f81 1-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "7b91ac2f021479fc268a3d2ce8c74d8206a65d35",
+  "prompts": {},
+  "humans": {
+    "h_c714c5d6d16f81": {
+      "author": "roicastrocasal <roicc@inditex.com>"
+    }
+  }
+}
