@@ -35,6 +35,8 @@ interface SettingsContextType {
   setGroqModel: (model: string) => void;
   openrouterModel: string;
   setOpenrouterModel: (model: string) => void;
+  openrouterSubtitleModel: string;
+  setOpenrouterSubtitleModel: (model: string) => void;
   // API keys
   googleApiKey: string;
   setGoogleApiKey: (key: string) => void;
@@ -58,9 +60,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [ollamaModel, setOllamaModelState] = useState<string>("phi3");
   const [groqModel, setGroqModelState] = useState<string>("llama3-8b-8192");
   const [openrouterModel, setOpenrouterModelState] = useState<string>(
-    "qwen/qwen3-coder:free"
+    "deepseek/deepseek-v4.1-flash"
   );
-  
+  const [openrouterSubtitleModel, setOpenrouterSubtitleModelState] =
+    useState<string>("");
+
   // API Key states
   const [googleApiKey, setGoogleApiKeyState] = useState<string>("");
   const [groqApiKey, setGroqApiKeyState] = useState<string>("");
@@ -113,6 +117,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     );
     if (savedOpenrouterModel) {
       setOpenrouterModelState(savedOpenrouterModel);
+    }
+
+    const savedOpenrouterSubtitleModel = localStorage.getItem(
+      "finetic-openrouter-subtitle-model"
+    );
+    if (savedOpenrouterSubtitleModel !== null) {
+      setOpenrouterSubtitleModelState(savedOpenrouterSubtitleModel);
     }
 
     // Load API key settings
@@ -168,6 +179,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("finetic-openrouter-model", model);
   };
 
+  const setOpenrouterSubtitleModel = (model: string) => {
+    setOpenrouterSubtitleModelState(model);
+    localStorage.setItem("finetic-openrouter-subtitle-model", model);
+  };
+
   // API Key setters
   const setGoogleApiKey = (key: string) => {
     setGoogleApiKeyState(key);
@@ -201,6 +217,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setGroqModel,
         openrouterModel,
         setOpenrouterModel,
+        openrouterSubtitleModel,
+        setOpenrouterSubtitleModel,
         googleApiKey,
         setGoogleApiKey,
         groqApiKey,

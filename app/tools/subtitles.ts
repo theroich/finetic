@@ -1,8 +1,13 @@
-import { google } from "@ai-sdk/google";
-import { streamText, tool } from "ai";
+import { streamText, tool, type LanguageModel } from "ai";
 import { z } from "zod";
 import { getSubtitleContent } from "@/app/actions/subtitles";
 import { convertTimestampToSeconds } from "@/lib/utils";
+
+const SUBTITLE_PROVIDER_OPTIONS = {
+  openrouter: {
+    reasoning: { enabled: false },
+  },
+} as const;
 
 export interface SkipToSubtitleContent {
   success: boolean;
@@ -14,7 +19,11 @@ export interface SkipToSubtitleContent {
   error?: string;
 }
 
-export const skipToSubtitleContent = (currentMedia: any) =>
+export const skipToSubtitleContent = (
+  currentMedia: any,
+  subtitleModel: LanguageModel,
+  subtitleConfigError?: string
+) =>
   tool({
     description:
       "Analyze subtitles and find the best timestamp to skip to based on the user's description. Only works when media is currently playing.",
@@ -35,6 +44,13 @@ export const skipToSubtitleContent = (currentMedia: any) =>
         subtitleIndex,
         currentMedia,
       });
+
+      if (subtitleConfigError) {
+        return {
+          success: false,
+          error: subtitleConfigError,
+        };
+      }
 
       // Check if we have current media context
       if (!currentMedia || !currentMedia.id || !currentMedia.mediaSourceId) {
@@ -68,7 +84,6 @@ export const skipToSubtitleContent = (currentMedia: any) =>
           };
         }
 
-        // Let Gemini analyze the subtitles to find the best match
         // Format subtitle data for analysis - create a more structured prompt
         const subtitleText = result.subtitles
           .map(
@@ -77,7 +92,7 @@ export const skipToSubtitleContent = (currentMedia: any) =>
           )
           .join("\n");
 
-        // Create a prompt for Gemini to analyze
+        // Create a prompt for the subtitle model to analyze
         const analysisPrompt = `You are analyzing subtitles from "${currentMedia.name}" to help a user skip to a specific scene.
 
 User wants to skip to: "${userDescription}"
@@ -95,11 +110,11 @@ Consider:
 
 Return ONLY the timestamp in HH:MM:SS format (e.g., 02:25.6 or 1:23:45.2):`;
 
-        // Use Gemini to analyze the subtitles
         const analysisResult = streamText({
-          model: google("gemini-2.0-flash"),
+          model: subtitleModel,
           messages: [{ role: "user", content: analysisPrompt }],
-          maxOutputTokens: 100,
+          maxOutputTokens: 512,
+          providerOptions: SUBTITLE_PROVIDER_OPTIONS,
         });
 
         let analysisText = "";
@@ -108,11 +123,23 @@ Return ONLY the timestamp in HH:MM:SS format (e.g., 02:25.6 or 1:23:45.2):`;
           analysisText += chunk;
         }
 
-        console.log("[skipToSubtitleContent] Analysis result:", analysisText);
+        const trimmedAnalysis = analysisText.trim();
+        console.log(
+          "[skipToSubtitleContent] Analysis result:",
+          trimmedAnalysis
+        );
 
-        // Extract timestamp from Gemini's response (looking for HH:MM:SS format)
+        if (!trimmedAnalysis) {
+          return {
+            success: false,
+            error:
+              "The subtitle model returned no content. Try a different subtitle model or a more specific description.",
+          };
+        }
+
+        // Extract timestamp from the response (looking for HH:MM:SS format)
         // Order is important: match HH:MM:SS first, then MM:SS
-        const timestampMatch = analysisText.match(
+        const timestampMatch = trimmedAnalysis.match(
           /\d{1,2}:\d{2}:\d{2}(?:\.\d+)?|\d{1,2}:\d{2}(?:\.\d+)?/
         );
         if (!timestampMatch) {
@@ -164,15 +191,21 @@ Return ONLY the timestamp in HH:MM:SS format (e.g., 02:25.6 or 1:23:45.2):`;
     },
   });
 
-export const createExplainScene = (currentMedia: any) =>
+export const createExplainScene = (
+  currentMedia: any,
+  capturedTimestamp: number | undefined,
+  subtitleModel: LanguageModel,
+  subtitleConfigError?: string
+) =>
   tool({
     description:
       "Analyze subtitles around the current timestamp to explain what's happening in the movie or show. Works when media is currently playing.",
     inputSchema: z.object({
       currentTimestamp: z
         .number()
+        .optional()
         .describe(
-          "The current playback timestamp in seconds (where the user is in the video)"
+          "The current playback timestamp in seconds. If omitted, the server uses the last known playback position."
         ),
       contextWindow: z
         .number()
@@ -190,8 +223,20 @@ export const createExplainScene = (currentMedia: any) =>
       contextWindow = 30,
       subtitleIndex = 0,
     }) => {
+      if (subtitleConfigError) {
+        return {
+          success: false,
+          error: subtitleConfigError,
+        };
+      }
+
+      const timestamp =
+        typeof currentTimestamp === "number" && currentTimestamp > 0
+          ? currentTimestamp
+          : capturedTimestamp ?? currentTimestamp ?? 0;
+
       console.log("📖 [explainScene] Tool called with:", {
-        currentTimestamp,
+        currentTimestamp: timestamp,
         contextWindow,
         subtitleIndex,
         currentMedia,
@@ -228,8 +273,8 @@ export const createExplainScene = (currentMedia: any) =>
         }
 
         // Filter subtitles to get context around current timestamp
-        const startTime = Math.max(0, currentTimestamp - contextWindow);
-        const endTime = currentTimestamp + contextWindow;
+        const startTime = Math.max(0, timestamp - contextWindow);
+        const endTime = timestamp + contextWindow;
 
         const relevantSubtitles = result.subtitles.filter(
           (sub) => sub.timestamp >= startTime && sub.timestamp <= endTime
@@ -248,21 +293,20 @@ export const createExplainScene = (currentMedia: any) =>
           .map(
             (sub) =>
               `[${sub.timestampFormatted}] ${sub.text}${
-                Math.abs(sub.timestamp - currentTimestamp) <= 2
+                Math.abs(sub.timestamp - timestamp) <= 2
                   ? " ← CURRENT POSITION"
                   : ""
               }`
           )
           .join("\n");
 
-        // Create analysis prompt for Gemini
         const analysisPrompt = `You are analyzing a scene from "${currentMedia.name}" to explain what's happening to the viewer.\n\nSubtitle context:\n${subtitleContext}\n\nProvide a natural 1-2 sentence explanation of what's happening in this scene. Focus on the key action and who's involved. Don't mention timestamps - just explain the scene naturally.`;
 
-        // Use Gemini to analyze the scene
         const analysisResult = streamText({
-          model: google("gemini-2.0-flash"),
+          model: subtitleModel,
           messages: [{ role: "user", content: analysisPrompt }],
-          maxOutputTokens: 300,
+          maxOutputTokens: 1024,
+          providerOptions: SUBTITLE_PROVIDER_OPTIONS,
         });
 
         let explanation = "";
@@ -270,23 +314,32 @@ export const createExplainScene = (currentMedia: any) =>
           explanation += chunk;
         }
 
-        console.log("[explainScene] Generated explanation:", explanation);
+        const trimmedExplanation = explanation.trim();
+        console.log("[explainScene] Generated explanation:", trimmedExplanation);
+
+        if (!trimmedExplanation) {
+          return {
+            success: false,
+            error:
+              "The subtitle model returned no content. Try a different subtitle model.",
+          };
+        }
 
         // Find the closest subtitle to current timestamp for reference
         const closestSubtitle = relevantSubtitles.reduce((closest, current) =>
-          Math.abs(current.timestamp - currentTimestamp) <
-          Math.abs(closest.timestamp - currentTimestamp)
+          Math.abs(current.timestamp - timestamp) <
+          Math.abs(closest.timestamp - timestamp)
             ? current
             : closest
         );
 
         return {
           success: true,
-          explanation: explanation.trim(),
+          explanation: trimmedExplanation,
           currentTime: {
-            timestamp: currentTimestamp,
-            formatted: `${Math.floor(currentTimestamp / 60)}:${String(
-              Math.floor(currentTimestamp % 60)
+            timestamp,
+            formatted: `${Math.floor(timestamp / 60)}:${String(
+              Math.floor(timestamp % 60)
             ).padStart(2, "0")}`,
           },
           contextSubtitles: relevantSubtitles.length,
@@ -306,7 +359,11 @@ export const createExplainScene = (currentMedia: any) =>
     },
   });
 
-export const createAnalyzeMedia = (currentMedia: any) =>
+export const createAnalyzeMedia = (
+  currentMedia: any,
+  subtitleModel: LanguageModel,
+  subtitleConfigError?: string
+) =>
   tool({
     description:
       "Analyze the entire movie or episode using subtitles to answer questions about the plot, characters, themes, or any aspect of the content. Works when media is currently playing.",
@@ -327,6 +384,13 @@ export const createAnalyzeMedia = (currentMedia: any) =>
         subtitleIndex,
         currentMedia,
       });
+
+      if (subtitleConfigError) {
+        return {
+          success: false,
+          error: subtitleConfigError,
+        };
+      }
 
       // Check if we have current media context
       if (!currentMedia || !currentMedia.id || !currentMedia.mediaSourceId) {
@@ -363,14 +427,13 @@ export const createAnalyzeMedia = (currentMedia: any) =>
           .map((sub) => `[${sub.timestampFormatted}] ${sub.text}`)
           .join("\n");
 
-        // Create analysis prompt for Gemini
         const analysisPrompt = `You are analyzing "${currentMedia.name}" to answer a user's question about the content.\n\nUser's question: "${userQuestion}"\n\nComplete subtitle content:\n${allSubtitles}\n\nProvide a helpful and accurate answer to the user's question in a natural and conversational style. Focus on the plot, characters, themes, or relevant details. Keep your response informative but concise.`;
 
-        // Use Gemini to analyze the media
         const analysisResult = streamText({
-          model: google("gemini-2.0-flash"),
+          model: subtitleModel,
           messages: [{ role: "user", content: analysisPrompt }],
-          maxOutputTokens: 500,
+          maxOutputTokens: 2048,
+          providerOptions: SUBTITLE_PROVIDER_OPTIONS,
         });
 
         let answer = "";
@@ -378,11 +441,20 @@ export const createAnalyzeMedia = (currentMedia: any) =>
           answer += chunk;
         }
 
-        console.log("[analyzeMedia] Generated answer:", answer);
+        const trimmedAnswer = answer.trim();
+        console.log("[analyzeMedia] Generated answer:", trimmedAnswer);
+
+        if (!trimmedAnswer) {
+          return {
+            success: false,
+            error:
+              "The subtitle model returned no content. Try a different subtitle model.",
+          };
+        }
 
         return {
           success: true,
-          answer: answer.trim(),
+          answer: trimmedAnswer,
           question: userQuestion,
           mediaName: currentMedia.name,
           subtitleCount: result.subtitles.length,

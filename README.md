@@ -33,7 +33,7 @@ https://github.com/user-attachments/assets/07fb5741-1edf-4655-9001-6df3e2b1c72b
 
 - **Frontend**: Next.js 15, React 19, TypeScript
 - **Styling**: Tailwind v4, shadcn/ui, Framer Motion
-- **AI**: Google Gemini 2.0 Flash with AI SDK
+- **AI**: OpenRouter, Google Gemini, Groq, or Ollama via AI SDK
 - **State Management**: Jotai for global state
 
 ## Getting Started
@@ -42,7 +42,7 @@ https://github.com/user-attachments/assets/07fb5741-1edf-4655-9001-6df3e2b1c72b
 
 - Node.js 18+
 - A running Jellyfin server
-- Google AI API key (for AI features)
+- An API key for your chosen AI provider (OpenRouter, Google AI, or Groq), or a local Ollama instance
 
 ### Installation
 
@@ -69,6 +69,7 @@ https://github.com/user-attachments/assets/07fb5741-1edf-4655-9001-6df3e2b1c72b
 
    ```env
    GOOGLE_GENERATIVE_AI_API_KEY=your_google_ai_api_key
+   OPENROUTER_API_KEY=your_openrouter_api_key
    ```
 
 ### Development
@@ -134,6 +135,7 @@ If you prefer to build and run manually:
      --name finetic \
      -p 3000:3000 \
      -e GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here \
+     -e OPENROUTER_API_KEY=your_openrouter_api_key \
      finetic
    ```
 
@@ -141,7 +143,8 @@ If you prefer to build and run manually:
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Google AI API key for AI navigator features | No |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Google AI API key for Gemini models | No |
+| `OPENROUTER_API_KEY` | OpenRouter API key for OpenRouter chat and subtitle models | No |
 | `NODE_ENV` | Node.js environment (automatically set to production in Docker) | No |
 
 ### Docker Considerations
@@ -179,7 +182,7 @@ docker rm finetic
 
 1. **Server Configuration**: On first launch, you'll be prompted to enter your Jellyfin server URL
 2. **Authentication**: Login with your Jellyfin credentials
-3. **AI Features**: The AI assistant will be available once you've configured your Google AI API key
+3. **AI Features**: Open Settings and choose a provider. For OpenRouter, set a Navigator model and, optionally, a separate Subtitle Tools model. API keys can be entered in Settings or provided through environment variables.
 
 ## Usage
 
@@ -192,6 +195,15 @@ docker rm finetic
   - "Skip to the action scene"
   - "Explain what's happening right now"
   - "What's this movie about?"
+
+### AI Providers
+
+Finetic supports OpenRouter, Google Gemini, Groq, and Ollama. When OpenRouter is selected, Settings exposes two model pickers:
+
+- **Navigator Model**: used for chat, navigation, and tool calling. It may use thinking effort.
+- **Subtitle Tools Model**: used by subtitle search, scene explanations, and media analysis. It must be able to run without thinking effort.
+
+Leave the Subtitle Tools Model empty to reuse the Navigator model with thinking disabled. The subtitle picker lists models that either have no reasoning support or can disable it. Subtitle text is sent to the selected provider when those tools run.
 
 #### Available AI Tools
 
