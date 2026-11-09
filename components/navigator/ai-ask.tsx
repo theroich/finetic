@@ -81,6 +81,7 @@ const AIAsk = () => {
     ollamaModel,
     groqModel,
     openrouterModel,
+    openrouterSubtitleModel,
     googleApiKey,
     groqApiKey,
     openrouterApiKey,
@@ -432,6 +433,7 @@ const AIAsk = () => {
             ollamaModel,
             groqModel,
             openrouterModel,
+            openrouterSubtitleModel,
             googleApiKey,
             groqApiKey,
             openrouterApiKey,
@@ -551,6 +553,11 @@ const AIAsk = () => {
               )}
 
               <form onSubmit={handleSubmitQuestion} className="space-y-3">
+                {askError && (
+                  <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    {askError.message}
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Input

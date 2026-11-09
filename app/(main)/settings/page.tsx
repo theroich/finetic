@@ -17,10 +17,16 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useSettings } from "@/contexts/settings-context";
-import { Settings2, Ship, Bot } from "lucide-react";
+import { Settings2, Ship } from "lucide-react";
 import { AuroraBackground } from "@/components/aurora-background";
 import { SearchBar } from "@/components/search-component";
 import { Label } from "@/components/ui/label";
+import { OpenRouterModelPicker } from "@/components/settings/openrouter-model-picker";
+import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
+import {
+  isSubtitleModelEligible,
+  requiresReasoning,
+} from "@/lib/openrouter";
 import { Gemini, Groq, OpenRouter } from "@lobehub/icons";
 import { Ollama } from "@lobehub/icons";
 
@@ -38,6 +44,8 @@ export default function SettingsPage() {
     setGroqModel,
     openrouterModel,
     setOpenrouterModel,
+    openrouterSubtitleModel,
+    setOpenrouterSubtitleModel,
     googleApiKey,
     setGoogleApiKey,
     groqApiKey,
@@ -46,17 +54,16 @@ export default function SettingsPage() {
     setOpenrouterApiKey,
   } = useSettings();
 
-  console.log({
-    navigatorEnabled,
-    aiProvider,
-    ollamaBaseUrl,
-    ollamaModel,
-    groqModel,
-    openrouterModel,
-    googleApiKey,
-    groqApiKey,
-    openrouterApiKey,
-  });
+  const { models, loading, error, reload } = useOpenRouterModels(
+    aiProvider === "openrouter"
+  );
+
+  const generalModelInfo = models.find(
+    (model) => model.id === openrouterModel
+  );
+  const generalModelRequiresReasoning = generalModelInfo
+    ? requiresReasoning(generalModelInfo)
+    : false;
 
   return (
     <div className="relative px-4 py-6 max-w-full overflow-hidden">
@@ -117,7 +124,10 @@ export default function SettingsPage() {
                       AI Provider
                     </Label>
                     <Select value={aiProvider} onValueChange={setAiProvider}>
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger
+                        className="w-full dark:bg-popover!"
+                        style={{ backgroundColor: "var(--popover)" }}
+                      >
                         <SelectValue placeholder="Select AI provider" />
                       </SelectTrigger>
                       <SelectContent>
@@ -351,7 +361,12 @@ export default function SettingsPage() {
                           >
                             OpenRouter Dashboard
                           </a>
-                          . Your key is stored locally and never shared.
+                          . Your key is stored locally and never shared. Leave
+                          empty to use{" "}
+                          <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                            OPENROUTER_API_KEY
+                          </code>{" "}
+                          from the server environment.
                         </p>
                       </div>
 
@@ -360,20 +375,23 @@ export default function SettingsPage() {
                           htmlFor="openrouter-model"
                           className="text-base font-medium"
                         >
-                          Model
+                          Navigator Model
                         </Label>
-                        <Input
+                        <OpenRouterModelPicker
                           id="openrouter-model"
-                          type="text"
                           value={openrouterModel}
-                          onChange={(e) => setOpenrouterModel(e.target.value)}
-                          placeholder="qwen/qwen3-coder:free"
-                          className="w-full"
+                          onChange={setOpenrouterModel}
+                          models={models}
+                          loading={loading}
+                          error={error}
+                          onRetry={reload}
+                          placeholder="Select an OpenRouter model"
                         />
                         <p className="text-sm text-muted-foreground">
-                          The OpenRouter model to use. Check out{" "}
+                          The model used for chat, navigation, and tool calling.
+                          It may use thinking effort. Check out{" "}
                           <a
-                            href="https://openrouter.ai/models?fmt=cards&supported_parameters=tools"
+                            href="https://openrouter.ai/models"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary hover:underline"
@@ -382,6 +400,43 @@ export default function SettingsPage() {
                           </a>
                           .
                         </p>
+                      </div>
+
+                      <div className="space-y-2 rounded-md border border-muted p-3">
+                        <Label
+                          htmlFor="openrouter-subtitle-model"
+                          className="text-base font-medium"
+                        >
+                          Subtitle Tools Model
+                        </Label>
+                        <OpenRouterModelPicker
+                          id="openrouter-subtitle-model"
+                          value={openrouterSubtitleModel}
+                          onChange={setOpenrouterSubtitleModel}
+                          models={models}
+                          loading={loading}
+                          error={error}
+                          onRetry={reload}
+                          allowEmpty
+                          emptyLabel="Use the Navigator model"
+                          filter={isSubtitleModelEligible}
+                          showContextFilter
+                          placeholder="Select a no-thinking model"
+                        />
+                        <p className="text-sm text-muted-foreground">
+                          Used by subtitle search, scene explanations, and media
+                          analysis. These tools do not need thinking effort.
+                          Leave empty to use the Navigator model with thinking
+                          disabled.
+                        </p>
+                        {generalModelRequiresReasoning &&
+                          !openrouterSubtitleModel && (
+                            <p className="text-sm text-destructive">
+                              The Navigator model requires thinking. Select a
+                              subtitle model that can run without thinking
+                              effort.
+                            </p>
+                          )}
                       </div>
                     </div>
                   )}
