@@ -1,0 +1,19 @@
+openspec/changes/openrouter-model-pickers/.openspec.yaml
+  s_d01d262e00a220::t_e125d1dccd7c0c 1-2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "987b4fe264e3afdbfcce96bd55947a0262670131",
+  "prompts": {},
+  "sessions": {
+    "s_d01d262e00a220": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3e82285bffew2eEYzXGr3d1dC",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "roicastrocasal <roicc@inditex.com>"
+    }
+  }
+}
