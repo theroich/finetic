@@ -38,6 +38,7 @@ import {
 import {
   createSystemPrompt,
 } from "./system-prompt";
+import type { LanguageModel } from "ai";
 
 // Export all media-related tools
 export {
@@ -86,7 +87,12 @@ export {
 };
 
 // Factory function to create all tools with context
-export function createAllTools(currentMedia: any, currentTimestamp?: number) {
+export function createAllTools(
+  currentMedia: any,
+  currentTimestamp: number | undefined,
+  subtitleModel: LanguageModel,
+  subtitleConfigError?: string
+) {
   return {
     // Media tools
     searchMedia,
@@ -112,9 +118,22 @@ export function createAllTools(currentMedia: any, currentTimestamp?: number) {
     getEpisodes,
     
     // Subtitle tools (context-dependent)
-    skipToSubtitleContent: skipToSubtitleContent(currentMedia),
-    explainScene: createExplainScene(currentMedia),
-    analyzeMedia: createAnalyzeMedia(currentMedia),
+    skipToSubtitleContent: skipToSubtitleContent(
+      currentMedia,
+      subtitleModel,
+      subtitleConfigError
+    ),
+    explainScene: createExplainScene(
+      currentMedia,
+      currentTimestamp,
+      subtitleModel,
+      subtitleConfigError
+    ),
+    analyzeMedia: createAnalyzeMedia(
+      currentMedia,
+      subtitleModel,
+      subtitleConfigError
+    ),
     
     // Theme tools
     themeToggle,
