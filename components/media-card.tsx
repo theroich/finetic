@@ -51,16 +51,22 @@ export function MediaCard({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [blurDataUrl, setBlurDataUrl] = useState<string | null>(null);
 
-  // Adjust image URL parameters based on container type
-  const imageUrl = continueWatching
-    ? `${serverUrl}/Items/${imageItemId}/Images/${imageType}?maxHeight=324&maxWidth=576&quality=100`
-    : `${serverUrl}/Items/${imageItemId}/Images/${imageType}?maxHeight=432&maxWidth=288&quality=100`;
+  // Get the image tag first so it can be included in the URL for cache busting
+  const imageTag =
+    continueWatching && item.Type === "Episode"
+      ? item.ParentThumbImageTag
+      : item.ImageTags?.[imageType];
+
+  const imageQuery = continueWatching
+    ? "maxHeight=324&maxWidth=576&quality=100"
+    : "maxHeight=432&maxWidth=288&quality=100";
+  const imageTagQuery = imageTag
+    ? `&tag=${encodeURIComponent(imageTag)}`
+    : "";
+  const imageUrl = `${serverUrl}/Items/${imageItemId}/Images/${imageType}?${imageQuery}${imageTagQuery}`;
+  const proxiedImageUrl = `/api/image?url=${encodeURIComponent(imageUrl)}`;
 
   // Get blur hash
-  const imageTag =
-    item.Type === "Episode"
-      ? item.ParentThumbImageTag
-      : item.ImageTags?.[imageType]!;
   const blurHash = item.ImageBlurHashes?.[imageType]?.[imageTag!] || "";
 
   // Decode blur hash
@@ -139,13 +145,18 @@ export function MediaCard({
               )}
               {/* Actual image */}
               <img
-                src={"https://lightspeed.ac/?url=" + imageUrl}
+                src={proxiedImageUrl}
                 alt={item.Name || ""}
-                className={`w-full h-full object-cover transition-opacity duration-300 shadow-lg shadow-sm group-hover:shadow-md ${
+                loading="lazy"
+                decoding="async"
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 shadow-lg shadow-sm group-hover:shadow-md ${
                   progressPercentage > 0 ? "rounded-t-md" : "rounded-md"
-                } opacity-100`}
+                } ${imageLoaded ? "opacity-100" : "opacity-0"}`}
                 onLoad={(e) => {
                   setImageLoaded(true);
+                }}
+                onError={() => {
+                  setImageLoaded(false);
                 }}
                 draggable={false}
                 ref={(img) => {
