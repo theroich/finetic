@@ -1,0 +1,21 @@
+app/api/chat/route.ts
+  s_988a0e617b27eb::t_56dd21739a63f7 1-3,23-26,28-29,56-61,68,70,73-76,91,93,96-99,157-160,180-191
+contexts/settings-context.tsx
+  s_988a0e617b27eb::t_e7c31c559e89db 130-132,137-139,144-146,195-197,201-203,207-209
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "2515fe7cee06f7760dbe488eb8a9438776d048a4",
+  "prompts": {},
+  "sessions": {
+    "s_988a0e617b27eb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3d92d09bffebK7G7JpC43MgGX",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "roicastrocasal <roicc@inditex.com>"
+    }
+  }
+}
