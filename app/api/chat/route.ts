@@ -1,6 +1,6 @@
-import { google, createGoogleGenerativeAI } from "@ai-sdk/google";
-import { openrouter, createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { groq, createGroq } from "@ai-sdk/groq";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createGroq } from "@ai-sdk/groq";
 import { createOllama } from "ai-sdk-ollama";
 import { convertToModelMessages, streamText, stepCountIs } from "ai";
 import { createAllTools, createSystemPrompt } from "@/app/tools";
@@ -20,12 +20,13 @@ async function getAuthData() {
 }
 
 function resolveOpenRouterModel(modelId: string, apiKey?: string) {
-  if (apiKey) {
-    return createOpenRouter({ apiKey }).chat(modelId);
-  }
+  // Trim keys: a leading/trailing space produces an invalid
+  // "Authorization: Bearer  ..." header that OpenRouter rejects with
+  // "Missing Authentication header".
+  const normalizedKey = apiKey?.trim() || process.env.OPENROUTER_API_KEY?.trim();
 
-  if (process.env.OPENROUTER_API_KEY) {
-    return openrouter.chat(modelId);
+  if (normalizedKey) {
+    return createOpenRouter({ apiKey: normalizedKey }).chat(modelId);
   }
 
   throw new Error(
@@ -52,19 +53,27 @@ export async function POST(req: Request) {
       openrouterApiKey,
     } = await req.json();
 
+    const normalizedGoogleApiKey = googleApiKey?.trim();
+    const normalizedGroqApiKey = groqApiKey?.trim();
+    const envGoogleApiKey =
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim();
+    const envGroqApiKey = process.env.GROQ_API_KEY?.trim();
+
     let model;
     let subtitleModel;
     let subtitleConfigError: string | undefined;
 
     switch (aiProvider) {
       case "gemini":
-        if (googleApiKey) {
+        if (normalizedGoogleApiKey) {
           const googleProvider = createGoogleGenerativeAI({
-            apiKey: googleApiKey,
+            apiKey: normalizedGoogleApiKey,
           });
           model = googleProvider("gemini-2.0-flash");
-        } else if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-          model = google("gemini-2.0-flash");
+        } else if (envGoogleApiKey) {
+          model = createGoogleGenerativeAI({
+            apiKey: envGoogleApiKey,
+          })("gemini-2.0-flash");
         } else {
           throw new Error(
             "Google API key is required for Gemini provider. Please set your API key in settings."
@@ -79,13 +88,15 @@ export async function POST(req: Request) {
         break;
       }
       case "groq":
-        if (groqApiKey) {
+        if (normalizedGroqApiKey) {
           const groqProvider = createGroq({
-            apiKey: groqApiKey,
+            apiKey: normalizedGroqApiKey,
           });
           model = groqProvider(groqModel);
-        } else if (process.env.GROQ_API_KEY) {
-          model = groq(groqModel);
+        } else if (envGroqApiKey) {
+          model = createGroq({
+            apiKey: envGroqApiKey,
+          })(groqModel);
         } else {
           throw new Error(
             "Groq API key is required for Groq provider. Please set your API key in settings."
@@ -143,8 +154,10 @@ export async function POST(req: Request) {
         break;
       }
       default:
-        if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-          model = google("gemini-2.0-flash");
+        if (envGoogleApiKey) {
+          model = createGoogleGenerativeAI({
+            apiKey: envGoogleApiKey,
+          })("gemini-2.0-flash");
         } else {
           throw new Error("No API key configured for the selected provider.");
         }
@@ -164,7 +177,18 @@ export async function POST(req: Request) {
       system: createSystemPrompt(currentMedia, currentTimestamp),
     });
 
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      onError: (error) => {
+        const message =
+          error instanceof Error ? error.message : String(error);
+
+        if (/missing auth(?:entication|enticate) header/i.test(message)) {
+          return "The AI provider rejected the request because the API key is missing or malformed. Check the API key in Settings (remove any leading/trailing spaces) or the server environment variable.";
+        }
+
+        return message;
+      },
+    });
   } catch (error) {
     console.error("Chat API Error:", error);
 

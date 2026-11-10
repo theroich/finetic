@@ -127,17 +127,23 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Load API key settings
-    const savedGoogleApiKey = localStorage.getItem("finetic-google-api-key");
+    const savedGoogleApiKey = localStorage
+      .getItem("finetic-google-api-key")
+      ?.trim();
     if (savedGoogleApiKey) {
       setGoogleApiKeyState(savedGoogleApiKey);
     }
 
-    const savedGroqApiKey = localStorage.getItem("finetic-groq-api-key");
+    const savedGroqApiKey = localStorage
+      .getItem("finetic-groq-api-key")
+      ?.trim();
     if (savedGroqApiKey) {
       setGroqApiKeyState(savedGroqApiKey);
     }
 
-    const savedOpenrouterApiKey = localStorage.getItem("finetic-openrouter-api-key");
+    const savedOpenrouterApiKey = localStorage
+      .getItem("finetic-openrouter-api-key")
+      ?.trim();
     if (savedOpenrouterApiKey) {
       setOpenrouterApiKeyState(savedOpenrouterApiKey);
     }
@@ -186,18 +192,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // API Key setters
   const setGoogleApiKey = (key: string) => {
-    setGoogleApiKeyState(key);
-    localStorage.setItem("finetic-google-api-key", key);
+    const normalizedKey = key.trim();
+    setGoogleApiKeyState(normalizedKey);
+    localStorage.setItem("finetic-google-api-key", normalizedKey);
   };
 
   const setGroqApiKey = (key: string) => {
-    setGroqApiKeyState(key);
-    localStorage.setItem("finetic-groq-api-key", key);
+    const normalizedKey = key.trim();
+    setGroqApiKeyState(normalizedKey);
+    localStorage.setItem("finetic-groq-api-key", normalizedKey);
   };
 
   const setOpenrouterApiKey = (key: string) => {
-    setOpenrouterApiKeyState(key);
-    localStorage.setItem("finetic-openrouter-api-key", key);
+    const normalizedKey = key.trim();
+    setOpenrouterApiKeyState(normalizedKey);
+    localStorage.setItem("finetic-openrouter-api-key", normalizedKey);
   };
 
   return (
