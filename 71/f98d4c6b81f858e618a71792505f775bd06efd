@@ -1,0 +1,19 @@
+components/navigator/ai-ask.tsx
+  s_988a0e617b27eb::t_971849a0c38e6b 5,27,78,167,180-184,281-284,427-434,444,588,593,595-598,600-601
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "71f98d4c6b81f858e618a71792505f775bd06efd",
+  "prompts": {},
+  "sessions": {
+    "s_988a0e617b27eb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3d92d09bffebK7G7JpC43MgGX",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "roicastrocasal <roicc@inditex.com>"
+    }
+  }
+}
