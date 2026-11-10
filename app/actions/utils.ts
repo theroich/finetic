@@ -74,7 +74,9 @@ export async function getStreamUrl(
   // Generate a unique PlaySessionId for each stream request
   const playSessionId = crypto.randomUUID();
 
-  let url = `${serverUrl}/Videos/${itemId}/master.m3u8?api_key=${user.AccessToken}&MediaSourceId=${mediaSourceId}&PlaySessionId=${playSessionId}&VideoCodec=h264,hevc&AudioCodec=aac,mp3&TranscodingProfile=Default`;
+  // fMP4 segments are required for HEVC playback in WebKit and for hls.js:
+  // HEVC inside MPEG-TS decodes as black video (audio keeps playing).
+  let url = `${serverUrl}/Videos/${itemId}/master.m3u8?api_key=${user.AccessToken}&MediaSourceId=${mediaSourceId}&PlaySessionId=${playSessionId}&VideoCodec=h264,hevc&AudioCodec=aac,mp3&TranscodingProfile=Default&segmentContainer=mp4`;
 
   // Apply custom bitrate if specified (takes precedence over quality presets)
   if (videoBitrate && videoBitrate > 0) {
