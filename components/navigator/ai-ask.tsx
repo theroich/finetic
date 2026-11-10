@@ -2,13 +2,12 @@
 
 import { useChat } from "@ai-sdk/react";
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAtom } from "jotai";
 import { BorderBeam } from "../magicui/border-beam";
 import { Button } from "../ui/button";
 import {
   ArrowRight,
-  Loader2,
   Ship,
   Plus,
   X,
@@ -25,6 +24,7 @@ import {
   List,
   Subtitles,
   LoaderPinwheel,
+  Square,
   Palette,
   BookOpen,
   GalleryVerticalEnd,
@@ -75,6 +75,7 @@ const AIAsk = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [input, setInput] = useState("");
   const [isToolHistoryOpen, setIsToolHistoryOpen] = useState(false);
+  const stoppedRef = useRef(false);
   const {
     aiProvider,
     ollamaBaseUrl,
@@ -163,6 +164,7 @@ const AIAsk = () => {
     status,
     error: askError,
     setMessages,
+    stop,
   } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
@@ -174,6 +176,11 @@ const AIAsk = () => {
     onFinish: ({ message }) => {
       console.log("🏁 Chat finished:", message);
       setCurrentTool(null);
+
+      if (stoppedRef.current) {
+        stoppedRef.current = false;
+        return;
+      }
 
       // each tool has a "tool-" prefix
       if (message.parts) {
@@ -271,6 +278,10 @@ const AIAsk = () => {
   };
 
   const handleResetChat = () => {
+    if (status === "submitted" || status === "streaming") {
+      stoppedRef.current = true;
+      stop();
+    }
     setMessages([]);
     setCurrentTool(null);
   };
@@ -413,6 +424,14 @@ const AIAsk = () => {
     );
   };
 
+  const isPending = status === "submitted" || status === "streaming";
+
+  const handleStopResponse = () => {
+    stoppedRef.current = true;
+    stop();
+    setCurrentTool(null);
+  };
+
   const handleSubmitQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -422,6 +441,7 @@ const AIAsk = () => {
     }
 
     try {
+      stoppedRef.current = false;
       sendMessage(
         { text: input },
         {
@@ -565,17 +585,20 @@ const AIAsk = () => {
                       onChange={(e) => setInput(e.target.value)}
                       placeholder={`Ask something like "play Inception" or "go to Breaking Bad"`}
                       className="rounded-xl bg-background/80 backdrop-blur-md border px-4"
-                      disabled={status !== "ready"}
+                      disabled={isPending}
                       autoFocus
                     />
                   </div>
                   <Button
-                    type="submit"
+                    type={isPending ? "button" : "submit"}
                     className="rounded-full px-4 h-10"
-                    disabled={status !== "ready" || !input.trim()}
+                    onClick={isPending ? handleStopResponse : undefined}
+                    disabled={!isPending && !input.trim()}
+                    title={isPending ? "Stop response" : "Send"}
+                    aria-label={isPending ? "Stop response" : "Send"}
                   >
-                    {status !== "ready" ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    {isPending ? (
+                      <Square className="h-4 w-4 fill-current" />
                     ) : (
                       <ArrowRight className="h-4 w-4 scale-105" />
                     )}

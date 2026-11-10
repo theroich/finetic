@@ -154,6 +154,7 @@ export async function POST(req: Request) {
       model,
       messages: convertToModelMessages(messages),
       stopWhen: stepCountIs(10),
+      abortSignal: req.signal,
       tools: createAllTools(
         currentMedia,
         currentTimestamp,
