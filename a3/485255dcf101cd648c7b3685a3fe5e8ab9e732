@@ -1,0 +1,14 @@
+app/actions/utils.ts
+  h_c714c5d6d16f81 77-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "a3485255dcf101cd648c7b3685a3fe5e8ab9e732",
+  "prompts": {},
+  "humans": {
+    "h_c714c5d6d16f81": {
+      "author": "roicastrocasal <roicc@inditex.com>"
+    }
+  }
+}
